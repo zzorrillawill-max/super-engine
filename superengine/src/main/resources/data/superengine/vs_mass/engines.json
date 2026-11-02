@@ -1,0 +1,14 @@
+[
+  {
+    "block": "superengine:super_engine",
+    "mass": 3200.0
+  },
+  {
+    "block": "superengine:mega_engine",
+    "mass": 3200.0
+  },
+  {
+    "block": "superengine:giga_engine",
+    "mass": 3200.0
+  }
+]
