@@ -93,7 +93,7 @@ public class SuperEngineBlock extends BaseEntityBlock {
             BlockEntity be = level.getBlockEntity(pos);
             if (be instanceof Container container) {
                 Containers.dropContents(level, pos, container);
-                level.updateNeighbourForOutputSignals(pos, this);
+                level.updateNeighbourForOutputSignal(pos, this);
             }
         }
         super.onRemove(state, level, pos, newState, moving);
