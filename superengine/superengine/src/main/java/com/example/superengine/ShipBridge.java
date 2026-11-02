@@ -2,10 +2,22 @@ package com.example.superengine;
 
 import com.mojang.logging.LogUtils;
 import net.minecraft.core.BlockPos;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.entity.BlockEntityType;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.properties.IntegerProperty;
+import net.minecraftforge.registries.ForgeRegistries;
 import org.slf4j.Logger;
 
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * Talks to Eureka and Valkyrien Skies through reflection, so this mod
@@ -17,6 +29,8 @@ final class ShipBridge {
     private static boolean ready = false;
     private static boolean failed = false;
 
+    private static Constructor<?> engineCtor;
+    private static Method engineTick;
     private static Method getShip;
     private static Method getAttachment;
     private static Class<?> controlClass;
@@ -24,14 +38,29 @@ final class ShipBridge {
     private static Method setPowerLinear;
     private static Method getPowerAngular;
     private static Method setPowerAngular;
-    private static Method getConsumed;
 
     private ShipBridge() {}
+
+    /** Eureka's own heat property. It must be the exact same object, not a copy. */
+    static IntegerProperty heatProperty() {
+        try {
+            Class<?> props = Class.forName("org.valkyrienskies.eureka.EurekaProperties");
+            Object instance = props.getField("INSTANCE").get(null);
+            return (IntegerProperty) props.getMethod("getHEAT").invoke(instance);
+        } catch (Throwable t) {
+            LOGGER.error("Super Engine could not find Eureka's heat property.", t);
+            return IntegerProperty.create("heat", 0, 4);
+        }
+    }
 
     private static boolean init() {
         if (ready) return true;
         if (failed) return false;
         try {
+            Class<?> engineClass = Class.forName("org.valkyrienskies.eureka.blockentity.EngineBlockEntity");
+            engineCtor = engineClass.getConstructor(BlockPos.class, BlockState.class);
+            engineTick = engineClass.getMethod("tick");
+
             Class<?> util = Class.forName("org.valkyrienskies.mod.common.VSGameUtilsKt");
             for (Method m : util.getMethods()) {
                 if (m.getName().equals("getLoadedShipManagingPos")
@@ -59,40 +88,85 @@ final class ShipBridge {
             setPowerLinear = controlClass.getMethod("setPowerLinear", double.class);
             getPowerAngular = controlClass.getMethod("getPowerAngular");
             setPowerAngular = controlClass.getMethod("setPowerAngular", double.class);
-            getConsumed = controlClass.getMethod("getConsumed");
 
             ready = true;
             return true;
         } catch (Throwable t) {
             failed = true;
-            LOGGER.error("Super Engine could not hook into Eureka. The engine will not push ships.", t);
+            LOGGER.error("Super Engine could not hook into Eureka. The engines will not work.", t);
             return false;
         }
     }
 
-    /**
-     * Adds engine power to the ship that contains pos.
-     *
-     * @return how much power the ship used last tick (the engine burns heat with it),
-     *         or 0 if the block is not on a Eureka ship.
-     */
-    static float addPower(ServerLevel level, BlockPos pos, double linear, double angular) {
-        if (!init()) return 0f;
+    /** Makes Eureka's engine block entity type accept our blocks. */
+    static void allowBlocks(Block... blocks) {
         try {
-            Object ship = getShip.invoke(null, level, pos);
-            if (ship == null) return 0f;
-            Object control = getAttachment.invoke(ship, controlClass);
-            if (control == null) return 0f;
+            BlockEntityType<?> type = ForgeRegistries.BLOCK_ENTITY_TYPES
+                    .getValue(new ResourceLocation("vs_eureka", "engine"));
+            if (type == null) throw new IllegalStateException("vs_eureka:engine block entity not found");
 
-            setPowerLinear.invoke(control, ((Double) getPowerLinear.invoke(control)) + linear);
-            setPowerAngular.invoke(control, ((Double) getPowerAngular.invoke(control)) + angular);
-            return (Float) getConsumed.invoke(control);
+            Field validBlocks = null;
+            for (Field f : BlockEntityType.class.getDeclaredFields()) {
+                if (Set.class.isAssignableFrom(f.getType())) {
+                    validBlocks = f;
+                    break;
+                }
+            }
+            if (validBlocks == null) throw new IllegalStateException("valid blocks field not found");
+
+            validBlocks.setAccessible(true);
+            @SuppressWarnings("unchecked")
+            Set<Block> old = (Set<Block>) validBlocks.get(type);
+            Set<Block> merged = new HashSet<>(old);
+            merged.addAll(Arrays.asList(blocks));
+            validBlocks.set(type, merged);
+        } catch (Throwable t) {
+            LOGGER.error("Super Engine could not register with Eureka's engine block entity.", t);
+        }
+    }
+
+    /** Creates Eureka's real engine block entity (same menu, fuel slot and fuel rules). */
+    static BlockEntity newEngine(BlockPos pos, BlockState state) {
+        if (!init()) return null;
+        try {
+            return (BlockEntity) engineCtor.newInstance(pos, state);
+        } catch (Throwable t) {
+            LOGGER.error("Super Engine could not create an engine block entity.", t);
+            return null;
+        }
+    }
+
+    /**
+     * Runs Eureka's own engine tick, then adds extra push on top
+     * so the engine is {@code multiplier} times as strong as a normal one.
+     */
+    static void tick(ServerLevel level, BlockPos pos, BlockEntity engine, double multiplier) {
+        if (!init()) return;
+        try {
+            Object control = null;
+            Object ship = getShip.invoke(null, level, pos);
+            if (ship != null) control = getAttachment.invoke(ship, controlClass);
+
+            double linearBefore = 0;
+            double angularBefore = 0;
+            if (control != null) {
+                linearBefore = (Double) getPowerLinear.invoke(control);
+                angularBefore = (Double) getPowerAngular.invoke(control);
+            }
+
+            engineTick.invoke(engine);
+
+            if (control != null && multiplier != 1.0) {
+                double linearAfter = (Double) getPowerLinear.invoke(control);
+                double angularAfter = (Double) getPowerAngular.invoke(control);
+                setPowerLinear.invoke(control, linearAfter + (linearAfter - linearBefore) * (multiplier - 1.0));
+                setPowerAngular.invoke(control, angularAfter + (angularAfter - angularBefore) * (multiplier - 1.0));
+            }
         } catch (Throwable t) {
             if (!failed) {
                 failed = true;
-                LOGGER.error("Super Engine failed while pushing a ship.", t);
+                LOGGER.error("Super Engine failed while ticking.", t);
             }
-            return 0f;
         }
     }
 }

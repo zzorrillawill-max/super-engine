@@ -1,3 +1,5 @@
 {
-  "block.superengine.super_engine": "Super Engine"
+  "block.superengine.super_engine": "Super Engine",
+  "block.superengine.mega_engine": "Mega Engine",
+  "block.superengine.giga_engine": "Giga Engine"
 }

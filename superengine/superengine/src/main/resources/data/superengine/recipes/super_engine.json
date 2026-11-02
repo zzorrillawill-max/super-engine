@@ -1,10 +1,22 @@
 {
   "type": "minecraft:crafting_shaped",
-  "pattern": ["DID", "IEI", "DID"],
+  "pattern": [
+    "DID",
+    "IEI",
+    "DID"
+  ],
   "key": {
-    "D": { "item": "minecraft:diamond" },
-    "I": { "item": "minecraft:iron_block" },
-    "E": { "item": "vs_eureka:engine" }
+    "D": {
+      "item": "minecraft:diamond"
+    },
+    "I": {
+      "item": "minecraft:iron_block"
+    },
+    "E": {
+      "item": "vs_eureka:engine"
+    }
   },
-  "result": { "item": "superengine:super_engine" }
+  "result": {
+    "item": "superengine:super_engine"
+  }
 }

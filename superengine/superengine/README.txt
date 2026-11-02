@@ -1,16 +1,14 @@
-SUPER ENGINE (Forge 1.20.1, needs Eureka! Ships! and Valkyrien Skies)
+SUPER ENGINES (Forge 1.20.1, needs Eureka! Ships! and Valkyrien Skies)
 
-Looks exactly like the normal Eureka engine but pushes about 6x harder.
-Fuel it by right clicking with coal (sneak + right click fills it up).
-Craft it: diamond, iron block, diamond ring around a normal Eureka engine,
-or use  /give @s superengine:super_engine
+Three engines that work exactly like Eureka's engine (same menu, same fuel slot,
+same fuel, hoppers work) but push harder:
+  Super Engine  6x    (diamonds + iron blocks around a Eureka engine)
+  Mega Engine   15x   (gold blocks + diamond blocks around a Super Engine)
+  Giga Engine   40x   (netherite ingots + diamond blocks around a Mega Engine)
+Or use  /give @s superengine:super_engine   (also mega_engine, giga_engine)
 
-Power is set in the world's serverconfig folder, file superengine-server.toml.
-Also raise maxSpeedFromEngines in vs_eureka.toml, or the speed cap holds it back.
+Strength is set in the world's serverconfig folder, file superengine-server.toml.
+Also raise maxSpeedFromEngines in vs_eureka.toml, because that is the top speed cap.
+Stronger engines get a ship up to that cap faster and can move heavier ships.
 
-HOW TO BUILD THE JAR WITHOUT INSTALLING ANYTHING
-1. Make a free GitHub account and a new empty repository.
-2. Upload everything in this folder (including the hidden .github folder).
-3. Open the Actions tab, wait for the green check, open the run,
-   download "superengine-jar" at the bottom.
-4. Unzip it and put the jar in your mods folder.
+IMPORTANT: delete the old superengine jar from your mods folder before adding the new one.

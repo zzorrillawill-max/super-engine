@@ -4,10 +4,15 @@
     {
       "rolls": 1,
       "entries": [
-        { "type": "minecraft:item", "name": "superengine:super_engine" }
+        {
+          "type": "minecraft:item",
+          "name": "superengine:super_engine"
+        }
       ],
       "conditions": [
-        { "condition": "minecraft:survives_explosion" }
+        {
+          "condition": "minecraft:survives_explosion"
+        }
       ]
     }
   ]

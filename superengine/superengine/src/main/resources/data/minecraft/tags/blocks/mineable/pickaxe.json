@@ -1,4 +1,8 @@
 {
   "replace": false,
-  "values": ["superengine:super_engine"]
+  "values": [
+    "superengine:super_engine",
+    "superengine:mega_engine",
+    "superengine:giga_engine"
+  ]
 }

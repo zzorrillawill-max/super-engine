@@ -1,0 +1,22 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "NDN",
+    "DMD",
+    "NDN"
+  ],
+  "key": {
+    "N": {
+      "item": "minecraft:netherite_ingot"
+    },
+    "D": {
+      "item": "minecraft:diamond_block"
+    },
+    "M": {
+      "item": "superengine:mega_engine"
+    }
+  },
+  "result": {
+    "item": "superengine:giga_engine"
+  }
+}
